@@ -4,6 +4,21 @@
 GREEN='\033[0;32m'
 NC='\033[0m'
 
+# Yetki kontrolü
+if [ "$EUID" -ne 0 ]; then 
+    echo "Lütfen sudo ile çalıştırın:"
+    echo "curl -o- https://raw.githubusercontent.com/habiboff/GIRDM/master/install.command | sudo bash"
+    exit 1
+fi
+
+# CLI aracını oluştur
+echo "CLI aracı oluşturuluyor..."
+
+# Dizin kontrolü
+if [ ! -d "/usr/local/bin" ]; then
+    mkdir -p /usr/local/bin
+fi
+
 # CLI aracını oluştur
 cat > /usr/local/bin/csc-cli << 'EOF'
 #!/bin/bash
