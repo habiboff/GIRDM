@@ -1,30 +1,22 @@
 #!/bin/bash
 
-# Renk kodları
+# Color codes
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-# Yetki kontrolü
+# Permission check
 if [ "$EUID" -ne 0 ]; then 
-    echo "Lütfen sudo ile çalıştırın:"
+    echo "Please run with sudo:"
     echo "curl -o- https://raw.githubusercontent.com/habiboff/GIRDM/master/install.command | sudo bash"
     exit 1
 fi
 
-# CLI aracını oluştur
-echo "CLI aracı oluşturuluyor..."
-
-# Dizin kontrolü
-if [ ! -d "/usr/local/bin" ]; then
-    mkdir -p /usr/local/bin
-fi
-
-# CLI aracını oluştur
+# Create CLI tool
 cat > /usr/local/bin/csc-cli << 'EOF'
 #!/bin/bash
 
 if [ "$1" != "create" ] || [ "$2" != "ios-project" ]; then
-    echo "Kullanım: csc-cli create ios-project --name ProjeAdı --bundle-id com.sirket.app"
+    echo "Usage: csc-cli create ios-project --name ProjectName --bundle-id com.company.app"
     exit 1
 fi
 
@@ -37,21 +29,41 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$PROJECT_NAME" ] || [ -z "$BUNDLE_ID" ]; then
-    echo "Hata: Proje adı ve bundle ID gerekli!"
+    echo "Error: Project name and bundle ID are required!"
     exit 1
 fi
 
+# Clone template
+echo "📥 Cloning template..."
 git clone https://github.com/habiboff/GIRDM.git "$PROJECT_NAME"
 cd "$PROJECT_NAME"
 rm -rf .git
-find . -name "*.pbxproj" -exec sed -i '' "s/GIRDM/$PROJECT_NAME/g" {} +
-find . -name "*.pbxproj" -exec sed -i '' "s/com.habiboff.GIRDM/$BUNDLE_ID/g" {} +
 
-echo -e "${GREEN}✅ Proje başarıyla oluşturuldu: $PROJECT_NAME${NC}"
+# Rename files and directories
+echo "🔄 Renaming project files..."
+mv GIRDM.xcodeproj "${PROJECT_NAME}.xcodeproj"
+mv GIRDM "${PROJECT_NAME}"
+
+# Update references in project files
+echo "📝 Updating project references..."
+find . -type f -name "*.pbxproj" -exec sed -i '' "s/GIRDM/$PROJECT_NAME/g" {} +
+find . -type f -name "*.swift" -exec sed -i '' "s/GIRDM/$PROJECT_NAME/g" {} +
+find . -type f -name "*.plist" -exec sed -i '' "s/GIRDM/$PROJECT_NAME/g" {} +
+find . -type f -name "*.h" -exec sed -i '' "s/GIRDM/$PROJECT_NAME/g" {} +
+find . -type f -name "*.m" -exec sed -i '' "s/GIRDM/$PROJECT_NAME/g" {} +
+
+# Update bundle identifier
+echo "🔑 Updating bundle identifier..."
+find . -name "Info.plist" -exec sed -i '' "s/com.habiboff.GIRDM/$BUNDLE_ID/g" {} +
+find . -type f -name "*.pbxproj" -exec sed -i '' "s/com.habiboff.GIRDM/$BUNDLE_ID/g" {} +
+
+echo -e "${GREEN}✅ Project successfully created: $PROJECT_NAME${NC}"
+echo "📱 Bundle ID: $BUNDLE_ID"
+echo "📂 Location: $(pwd)"
 EOF
 
-# CLI aracını çalıştırılabilir yap
+# Make CLI tool executable
 chmod +x /usr/local/bin/csc-cli
 
-echo -e "${GREEN}✅ CSC CLI başarıyla kuruldu!${NC}"
-echo "Kullanım: csc-cli create ios-project --name ProjeAdı --bundle-id com.sirket.app"
+echo -e "${GREEN}✅ CSC CLI successfully installed!${NC}"
+echo "Usage: csc-cli create ios-project --name ProjectName --bundle-id com.company.app"
